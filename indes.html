@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGGS Pilibanga Live Market</title>
+    <style>
+        /* प्रोफेशनल डार्क थीम */
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0d1117; color: #c9d1d9; margin: 0; padding: 15px; }
+        .container { max-width: 800px; margin: auto; }
+        .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #ffd700; margin-bottom: 20px; }
+        h1 { color: #ffd700; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* एडमिन पैनल */
+        .admin-panel { background: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .input-box label { display: block; font-size: 0.8rem; color: #8b949e; margin-bottom: 5px; }
+        input, select { background: #0d1117; border: 1px solid #30363d; color: #ffd700; padding: 10px; border-radius: 6px; width: 92%; font-size: 1rem; outline: none; }
+        
+        button { background: #ffd700; color: #000; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; grid-column: 1 / -1; font-size: 1.1rem; transition: 0.3s; margin-top: 10px; }
+        button:hover { background: #ffea00; transform: scale(1.01); }
+
+        /* डिस्प्ले कार्ड्स */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: linear-gradient(145deg, #1c2128, #161b22); border: 1px solid #30363d; padding: 30px 20px; border-radius: 15px; text-align: center; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .city-tag { position: absolute; top: 15px; right: 15px; background: #ffd700; color: #000; padding: 3px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .price { font-size: 2.8rem; font-weight: bold; color: #ffffff; margin: 20px 0; font-family: 'Courier New', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.1); }
+        .label { color: #8b949e; font-size: 1rem; text-transform: uppercase; letter-spacing: 1.5px; }
+        .status { font-size: 0.85rem; margin-top: 10px; font-weight: bold; }
+        
+        #time-display { font-size: 0.9rem; color: #ffd700; margin-top: 10px; font-weight: 500; }
+        #footer-msg { text-align: center; color: #484f58; font-size: 0.75rem; margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Market Live Dashboard</h1>
+        <div id="time-display">Connecting to Global Markets...</div>
+    </div>
+
+    <div class="admin-panel">
+        <div class="input-box">
+            <label>1 USD to INR (डॉलर रेट)</label>
+            <input type="number" id="usd-rate" value="84.15" step="0.01">
+        </div>
+        <div class="input-box">
+            <label>Local Premium (₹ अतिरिक्त भाव)</label>
+            <input type="number" id="city-premium" value="1500">
+        </div>
+        <div class="input-box">
+            <label>Select Your City</label>
+            <select id="city-name">
+                <option value="Pilibanga">Pilibanga</option>
+                <option value="Hanumangarh">Hanumangarh</option>
+                <option value="Jaipur">Jaipur</option>
+                <option value="Delhi">Delhi</option>
+            </select>
+        </div>
+        <button onclick="fetchPrices()">Update Prices & Save Settings</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="city-tag" id="tag-gold">--</div>
+            <p class="label">Gold (24K - 10G)</p>
+            <div class="price" id="gold-price">₹ --,---</div>
+            <p class="status" id="gold-status">Loading...</p>
+        </div>
+        <div class="card">
+            <div class="city-tag" id="tag-silver">--</div>
+            <p class="label">Silver (10G)</p>
+            <div class="price" id="silver-price">₹ --,---</div>
+            <p class="status" id="silver-status">Loading...</p>
+        </div>
+    </div>
+    <p id="footer-msg">Automatic update every 30 seconds | Backup servers active</p>
+</div>
+
+<script>
+    const OUNCE_TO_GRAM = 31.1035;
+
+    // ब्राउज़र मेमोरी में सेटिंग्स सेव करना
+    function saveSettings() {
+        localStorage.setItem('mggs_usd', document.getElementById('usd-rate').value);
+        localStorage.setItem('mggs_premium', document.getElementById('city-premium').value);
+        localStorage.setItem('mggs_city', document.getElementById('city-name').value);
+    }
+
+    // ब्राउज़र मेमोरी से सेटिंग्स लोड करना
+    function loadSettings() {
+        const usd = localStorage.getItem('mggs_usd');
+        const premium = localStorage.getItem('mggs_premium');
+        const city = localStorage.getItem('mggs_city');
+        if (usd) document.getElementById('usd-rate').value = usd;
+        if (premium) document.getElementById('city-premium').value = premium;
+        if (city) document.getElementById('city-name').value = city;
+    }
+
+    async function fetchPrices() {
+        saveSettings();
+        const usdRate = parseFloat(document.getElementById('usd-rate').value);
+        const premium = parseFloat(document.getElementById('city-premium').value);
+        const city = document.getElementById('city-name').value;
+
+        document.getElementById('tag-gold').innerText = city;
+        document.getElementById('tag-silver').innerText = city;
+
+        // --- 1. GOLD FETCH (Binance) ---
+        try {
+            const resG = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT`);
+            const dataG = await resG.json();
+            if (dataG.price) {
+                let goldINR = ((parseFloat(dataG.price) / OUNCE_TO_GRAM) * 10 * usdRate) + premium;
+                document.getElementById('gold-price').innerText = "₹" + Math.round(goldINR).toLocaleString('en-IN');
+                document.getElementById('gold-status').innerText = "● LIVE DATA";
+                document.getElementById('gold-status').style.color = "#4caf50";
+            }
+        } catch(e) {
+            document.getElementById('gold-status').innerText = "GOLD SERVER OFFLINE";
+            document.getElementById('gold-status').style.color = "#f44336";
+        }
+
+        // --- 2. SILVER FETCH (Multiple Backup Logic) ---
+        let silverDone = false;
+        
+        // Backup 1: Cryptocompare (Best for Silver)
+        try {
+            const resS = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=XAG&tsyms=USD`);
+            const dataS = await resS.json();
+            if (dataS.USD) {
+                let silverINR = ((dataS.USD / OUNCE_TO_GRAM) * 10 * usdRate) + premium;
+                document.getElementById('silver-price').innerText = "₹" + Math.round(silverINR).toLocaleString('en-IN');
+                document.getElementById('silver-status').innerText = "● LIVE DATA";
+                document.getElementById('silver-status').style.color = "#4caf50";
+                silverDone = true;
+            }
+        } catch(e) { console.log("Silver Backup 1 failed"); }
+
+        // Backup 2: Binance SLVUSDT (अगर पहला फेल हो)
+        if (!silverDone) {
+            try {
+                const resS2 = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=SLVUSDT`);
+                const dataS2 = await resS2.json();
+                if (dataS2.price) {
+                    let silverINR = ((parseFloat(dataS2.price) / OUNCE_TO_GRAM) * 10 * usdRate) + premium;
+                    document.getElementById('silver-price').innerText = "₹" + Math.round(silverINR).toLocaleString('en-IN');
+                    document.getElementById('silver-status').innerText = "● LIVE (BACKUP)";
+                    document.getElementById('silver-status').style.color = "#4caf50";
+                    silverDone = true;
+                }
+            } catch(e) {
+                document.getElementById('silver-status').innerText = "SILVER SERVER OFFLINE";
+                document.getElementById('silver-status').style.color = "#f44336";
+            }
+        }
+
+        document.getElementById('time-display').innerText = "Last Updated: " + new Date().toLocaleTimeString();
+    }
+
+    // प्रोग्राम शुरू करें
+    loadSettings();
+    fetchPrices();
+    // हर 30 सेकंड में ऑटो-अपडेट
+    setInterval(fetchPrices, 30000);
+</script>
+
+</body>
+</html>

@@ -113,7 +113,7 @@
             const resG = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT`);
             const dataG = await resG.json();
             if (dataG.price) {
-                let goldINR = ((parseFloat(dataG.price) / OUNCE_TO_GRAM) * 10 * usdRate) + premium;
+                let goldINR = (((parseFloat(dataG.price) / OUNCE_TO_GRAM) * 10 * usdRate) * 1.065) + premium;
                 document.getElementById('gold-price').innerText = "₹" + Math.round(goldINR).toLocaleString('en-IN');
                 document.getElementById('gold-status').innerText = "● LIVE DATA";
                 document.getElementById('gold-status').style.color = "#4caf50";
@@ -170,5 +170,6 @@
 </body>
 
 </html>
+
 
 
